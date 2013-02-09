@@ -35,7 +35,8 @@
         <div id="map"></div>
         
         <script>
-            var DOMAIN = 'http://localhost:1337/';
+            //var DOMAIN = 'http://localhost:1337/';
+            var DOMAIN = window.location.origin + ':1337/';
             var map = L.map('map').setView([55.7, 37.7], 5);
             L.tileLayer('http://{s}.tile.osm.org/{z}/{x}/{y}.png').addTo(map);
 
@@ -60,7 +61,26 @@
             }
             
             var dropArea = document.getElementById("map");
+
+            dropArea.addEventListener("dragenter", function (evt) {
+                evt.preventDefault();
+                evt.stopPropagation();
+            }, false)
+
+            dropArea.addEventListener("dragover", function (evt) {
+                evt.preventDefault();
+                evt.stopPropagation();
+            }, false)
+
+            dropArea.addEventListener("dragexit", function (evt) {
+                evt.preventDefault();
+                evt.stopPropagation();
+            }, false)
+
             dropArea.addEventListener("drop", function (evt) {
+                evt.preventDefault();
+                evt.stopPropagation();
+
                 var xhr = new XMLHttpRequest();
                 
                 xhr.onreadystatechange = function() {
@@ -79,8 +99,6 @@
 
                 xhr.send(formData);
 
-                evt.preventDefault();
-                evt.stopPropagation();
             }, false);
             
             $('#upload').click(function() {

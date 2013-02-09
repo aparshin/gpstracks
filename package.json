@@ -6,5 +6,8 @@
        "jquery": "~1.8",
        "unzip": "~0.1",
        "formidable": "~1.0" 
+    },
+    "engines": {
+        "node": "~0.8"
     }
 }
