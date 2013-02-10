@@ -6,8 +6,7 @@ var http       = require('http'),
     path       = require('path'),
     $          = require('jquery'),
     unzip      = require('unzip'),
-    formidable = require('formidable'),
-    qs         = require('querystring');
+    formidable = require('formidable');
 
 var TaskManager = function() {
     var taskArr = [],
@@ -54,11 +53,21 @@ var TaskManager = function() {
     }
 
     this.getTaskState = function(taskID) {
-        return taskID in taskHash ? taskHash[taskID].state : null;
+        return taskID in taskHash ? taskHash[taskID].state : 'unknown';
     }
 
     this.getTaskResult = function(taskID) {
         return taskID in taskHash ? taskHash[taskID].result : null;
+    }
+
+    this.removeTask = function(taskID) {
+        delete taskHash[taskID];
+        for (var i = 0; i < taskArr.length; i++) {
+            if (taskArr[i].id === taskID) {
+                taskArr.splice(i, 1);
+                return;
+            }
+        }
     }
 }
 
@@ -96,7 +105,8 @@ var gpxCollector = {
         return $.Deferred().resolve([]);
     },
 
-    getGeoJSON : function() { return this._geoJSON; }
+    getGeoJSON : function() { return this._geoJSON; },
+    clean: function() { this._geoJSON = []; }
 };
 
 //Parses several track formats using gpsbabel. Type of track is detected using file extension.
@@ -194,6 +204,7 @@ var TrackParserManager = function() {
         var _this = this;
         if (!files.length) {
             def.resolve(gpxCollector.getGeoJSON());
+            gpxCollector.clean();
             //response.end(JSON.stringify(gpxCollector.getGeoJSON()));
             return;
         };
@@ -290,6 +301,7 @@ http.createServer(function (request, response) {
         var res = {state: taskManager.getTaskState(taskID)};
         if (res.state === 'done' ) {
             res.result = taskManager.getTaskResult(taskID);
+            taskManager.removeTask(taskID);
         }
         response.end( callback + '(' + JSON.stringify(res) + ')' );
     }
