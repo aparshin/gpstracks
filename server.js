@@ -4,7 +4,7 @@ var http       = require('http'),
     fs         = require('fs'),
     DOMParser  = require('xmldom').DOMParser,
     path       = require('path'),
-    $          = require('jquery'),
+    Q          = require('q'),
     unzip      = require('unzip'),
     formidable = require('formidable');
 
@@ -74,7 +74,7 @@ var TaskManager = function() {
 //var ITrackParser = {
 //    isAcceptable: function(filename, type) {},
 //    parse: function(data, filename, type) {
-//        return $.Deferred().resolve([{data: '', filename: '', type: ''}]);
+//        return Q.([{data: '', filename: '', type: ''}]);
 //    }
 //}
 
@@ -102,7 +102,7 @@ var gpxCollector = {
             }
         });
 
-        return $.Deferred().resolve([]);
+        return Q.resolve([]);
     },
 
     getGeoJSON : function() { return this._geoJSON; },
@@ -119,6 +119,7 @@ var gpsbabelParser = {
     isAcceptable: function(filename) { return path.extname(filename) in this._supportedTypes; },
     parse: function(data, filename, type) {
         console.log('gpsbabel parse', filename);
+        var def = Q.defer();
         var babelType = this._supportedTypes[ path.extname(filename) ]; 
         var gpsbabel = spawn('gpsbabel', ('-i ' + babelType + ' -f - -o gpx -F -').split(' '));
 
@@ -133,7 +134,6 @@ var gpsbabelParser = {
             def.resolve([]);
         })
 
-        var def = $.Deferred();
         gpsbabel.stdout.on('end', function(code) {
             def.resolve({data: gpxdata, filename: filename, type: 'gpx'});
         });
@@ -141,7 +141,7 @@ var gpsbabelParser = {
         gpsbabel.stdin.write(data);
         gpsbabel.stdin.end();
 
-        return def;
+        return def.promise;
     }
 }
 
@@ -149,7 +149,7 @@ var zipParser = {
     isAcceptable: function(filename) { return path.extname(filename) === '.zip'; },
     parse: function(data, filename) {
         console.log('zip parse', filename);
-        var def = $.Deferred();
+        var def = Q.defer();
         var uncompressedFiles = [];
         var unzipParse = unzip.Parse();
         unzipParse
@@ -173,14 +173,14 @@ var zipParser = {
         unzipParse.write(data);
         unzipParse.end();
 
-        return def;
+        return def.promise;
     }
 }
 
 var httpDownloader = {
     isAcceptable: function(filename, type) { return type === 'url'; },
     parse: function(fileurl) {
-        var def = $.Deferred();
+        var def = Q.defer();
         http.get(fileurl, function(response) {
             var fileData = new Buffer(0);
             response.on('data', function(data) {
@@ -190,7 +190,7 @@ var httpDownloader = {
                 def.resolve({filename: url.parse(fileurl).pathname, data: fileData});
             })
         })
-        return def;
+        return def.promise;
     }
 }
 
@@ -198,7 +198,7 @@ var httpDownloader = {
 var TrackParserManager = function() {
     var parsers = [gpxCollector, gpsbabelParser, zipParser, httpDownloader];
     var files = [];
-    var def = $.Deferred();
+    var def = Q.defer();
 
     var _process = function() {
         var _this = this;
@@ -231,7 +231,7 @@ var TrackParserManager = function() {
 
     this.process = function() {
         _process();
-        return def;
+        return def.promise;
     }
 
 }

@@ -3,7 +3,7 @@
     "version": "0.1.0",
     "dependencies": {
        "xmldom": "~0.1",
-       "jquery": "~1.8",
+       "q": "~0.8",
        "unzip": "~0.1",
        "formidable": "~1.0" 
     },
