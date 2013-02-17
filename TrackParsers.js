@@ -17,8 +17,8 @@ var unzip      = require('unzip'),
 //It doesn't produce any parse results. GeoJSON objects can be accessed using getGeoJSON() function
 var gpxCollector = {
     _geoJSON: [],
-    isAcceptable: function(filename, type) { return type === 'gpx' || path.extname(filename) === '.gpx'; },
-    parse: function(data, filename, type) {
+    isAcceptable: function (filename, type) { return type === 'gpx' || path.extname(filename) === '.gpx'; },
+    parse: function (data, filename, type) {
         var dom = new DOMParser().parseFromString(data);
         var pointElems = dom.documentElement.getElementsByTagName('trkpt');
         
@@ -40,8 +40,8 @@ var gpxCollector = {
         return Q.resolve([]);
     },
 
-    getGeoJSON : function() { return this._geoJSON; },
-    clean: function() { this._geoJSON = []; }
+    getGeoJSON : function () { return this._geoJSON; },
+    clean: function () { this._geoJSON = []; }
 };
 
 //Parses several track formats using gpsbabel. Type of track is detected using file extension.
@@ -51,11 +51,11 @@ var gpsbabelParser = {
         '.plt': 'ozi',
         '.kml': 'kml'
     },
-    isAcceptable: function(filename) { return path.extname(filename) in this._supportedTypes; },
-    parse: function(data, filename, type) {
+    isAcceptable: function (filename) { return path.extname(filename) in this._supportedTypes; },
+    parse: function (data, filename, type) {
         console.log('gpsbabel parse', filename);
         var def = Q.defer();
-        var babelType = this._supportedTypes[ path.extname(filename) ]; 
+        var babelType = this._supportedTypes[path.extname(filename)]; 
         var gpsbabel = spawn('gpsbabel', ('-i ' + babelType + ' -f - -o gpx -F -').split(' '));
 
         var gpxdata = '';
@@ -64,12 +64,12 @@ var gpsbabelParser = {
             gpxdata += data;
         });
 
-        gpsbabel.on('error', function() {
+        gpsbabel.on('error', function () {
             console.log('gpsbabel error!');
             def.resolve([]);
-        })
+        });
 
-        gpsbabel.stdout.on('end', function(code) {
+        gpsbabel.stdout.on('end', function (code) {
             def.resolve({data: gpxdata, filename: filename, type: 'gpx'});
         });
         
@@ -78,56 +78,56 @@ var gpsbabelParser = {
 
         return def.promise;
     }
-}
+};
 
 var zipParser = {
-    isAcceptable: function(filename) { return path.extname(filename) === '.zip'; },
-    parse: function(data, filename) {
+    isAcceptable: function (filename) { return path.extname(filename) === '.zip'; },
+    parse: function (data, filename) {
         console.log('zip parse', filename);
         var def = Q.defer();
         var uncompressedFiles = [];
         var unzipParse = unzip.Parse();
         unzipParse
-            .on('entry', function(entry) {
+            .on('entry', function (entry) {
                 var unzipFileName = entry.path; 
                 //console.log('entry: ' + unzipFileName);
                 var uncompressed = new Buffer(0);
-                entry.on('data', function(data) {
+                entry.on('data', function (data) {
                     uncompressed = Buffer.concat([uncompressed, data]);
-                })
-                entry.on('end', function() {
+                });
+                entry.on('end', function () {
                     uncompressedFiles.push({filename: filename + '/' + unzipFileName, data: uncompressed});
-                }).on('error', function() {
+                }).on('error', function () {
                     console.log('zip error!');
-                })
+                });
             })
-            .on('end', function() {
+            .on('end', function () {
                 def.resolve(uncompressedFiles);
-            })
+            });
 
         unzipParse.write(data);
         unzipParse.end();
 
         return def.promise;
     }
-}
+};
 
 var httpDownloader = {
-    isAcceptable: function(filename, type) { return type === 'url'; },
-    parse: function(fileurl) {
+    isAcceptable: function (filename, type) { return type === 'url'; },
+    parse: function (fileurl) {
         var def = Q.defer();
-        http.get(fileurl, function(response) {
+        http.get(fileurl, function (response) {
             var fileData = new Buffer(0);
-            response.on('data', function(data) {
+            response.on('data', function (data) {
                 fileData = Buffer.concat([fileData, data]);
-            }).on('end', function() {
+            }).on('end', function () {
                 //trackParser.addTrack(url.parse(urlData).pathname, fileData);
                 def.resolve({filename: url.parse(fileurl).pathname, data: fileData});
-            })
-        })
+            });
+        });
         return def.promise;
     }
-}
+};
 
 module.exports = {
     gpxCollector: gpxCollector, 
@@ -135,4 +135,4 @@ module.exports = {
     zipParser: zipParser,
     httpDownloader: httpDownloader,     
     parsers: [gpxCollector, gpsbabelParser, zipParser, httpDownloader]
-}
+};

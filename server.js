@@ -12,7 +12,7 @@ http.createServer(function (request, response) {
     var parsedURL = url.parse(request.url, true);
     if (parsedURL.pathname === '/uploadgps')
     {
-        if (request.method.toUpperCase() === "OPTIONS"){
+        if (request.method.toUpperCase() === "OPTIONS") {
  
             response.writeHead(
                 "204",
@@ -37,26 +37,26 @@ http.createServer(function (request, response) {
 
         var trackParser = new TrackParserManager();
         var form = new formidable.IncomingForm();
-        form.onPart = function(part) {
+        form.onPart = function (part) {
             if (part.name === 'file') {
                 var fileData = new Buffer(0);
-                part.on('data', function(data) {
+                part.on('data', function (data) {
                     fileData = Buffer.concat([fileData, data]);
-                }).on('end', function() {
+                }).on('end', function () {
                     trackParser.addTrack(part.filename, fileData);
-                })
+                });
             } 
             else if (part.name === 'url') {
                 var urlData = '';
-                part.on('data', function(data) {
+                part.on('data', function (data) {
                     urlData += data;
-                }).on('end', function() {
+                }).on('end', function () {
                     trackParser.addTrack('', urlData, 'url');
-                })
+                });
             }
-        }
+        };
 
-        form.parse(request, function() {
+        form.parse(request, function () {
             var taskID = taskManager.addTask(trackParser.process);
             response.end(taskID);
         });
@@ -69,10 +69,10 @@ http.createServer(function (request, response) {
         var taskID = parsedURL.query.taskid;
         var callback = parsedURL.query.callback;
         var res = {state: taskManager.getTaskState(taskID)};
-        if (res.state === 'done' ) {
+        if (res.state === 'done') {
             res.result = taskManager.getTaskResult(taskID);
             taskManager.removeTask(taskID);
         }
-        response.end( callback + '(' + JSON.stringify(res) + ')' );
+        response.end(callback + '(' + JSON.stringify(res) + ')');
     }
 }).listen(1337);

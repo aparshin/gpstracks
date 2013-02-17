@@ -1,15 +1,15 @@
-﻿(function()
+﻿(function ()
 {
     var publicInterface = {
-        afterViewer: function(params, map)
+        afterViewer: function (params, map)
         {
             var DOMAIN = 'http://test.aparshin.ru:1337/';
-            var checkTask = function(taskid) {
-                var interval = setInterval(function() {
+            var checkTask = function (taskid) {
+                var interval = setInterval(function () {
                     $.ajax(DOMAIN + "checktask?callback=?", {
                         dataType: 'jsonp',
                         data: {taskid: taskid},
-                        success: function(response) {
+                        success: function (response) {
                             if (response.state === 'done') {
                                 clearInterval(interval);
 
@@ -23,18 +23,18 @@
                                 clearInterval(interval);
                             }
                         }
-                    })
-                }, 1000)
-            }
+                    });
+                }, 1000);
+            };
             
             var canvas = $('<div/>');
             var dropZone = $('<div/>').css({'text-align': 'center', 'padding-top': '30%', 'font-size': '30px', height: '100px'})
                 .text('Перетащите сюда GPS треки').appendTo(canvas);
                 
-            var preventDefaultHandler = function(evt) {
+            var preventDefaultHandler = function (evt) {
                 evt.preventDefault();
                 evt.stopPropagation();
-            }
+            };
 
             dropZone[0].addEventListener("dragenter", preventDefaultHandler);
             dropZone[0].addEventListener("dragover",  preventDefaultHandler);
@@ -45,8 +45,8 @@
                 
                 var xhr = new XMLHttpRequest();
                 
-                xhr.onreadystatechange = function() {
-                    if(this.readyState == this.DONE) {
+                xhr.onreadystatechange = function () {
+                    if (this.readyState == this.DONE) {
                         checkTask(this.response);
                     }
                 };
@@ -62,10 +62,10 @@
                 xhr.send(formData);
                 
                 return false;
-            }, false)
+            }, false);
             
             var menu = new leftMenu();
-            menu.createWorkCanvas("aisdnd", function(){});
+            menu.createWorkCanvas("aisdnd", function () {});
             _(menu.workCanvas, [canvas[0]], [['css', 'width', '100%']]);
         }
     };
