@@ -7,6 +7,14 @@
        "unzip": "~0.1",
        "formidable": "~1.0" 
     },
+    "devDependencies": {
+        "jshint": "~0.9",
+        "jasmine-node": "~1.2",
+        "sinon": "~1.6"
+    },
+    "scripts": {
+        "test": "jasmine-node specs"
+    },
     "engines": {
         "node": "~0.8"
     }
