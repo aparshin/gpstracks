@@ -19,7 +19,7 @@ var gpxCollector = {
     _geoJSON: [],
     isAcceptable: function (filename, type) { return type === 'gpx' || path.extname(filename) === '.gpx'; },
     parse: function (data, filename, type) {
-        var dom = new DOMParser().parseFromString(data);
+        var dom = new DOMParser().parseFromString(data.toString());
         var pointElems = dom.documentElement.getElementsByTagName('trkpt');
         
         var coords = [];
