@@ -4,8 +4,10 @@
     "dependencies": {
        "xmldom": "~0.1",
        "q": "~0.8",
-       "unzip": "~0.1",
-       "formidable": "~1.0" 
+       "unzip": "~0.1.11",
+       "formidable": "~1.0",
+       "sqlite3": "~3.0.4",
+       "underscore": "~1.7.0"
     },
     "devDependencies": {
         "jshint": "~0.9",

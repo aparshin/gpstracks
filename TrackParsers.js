@@ -14,9 +14,7 @@ var unzip      = require('unzip'),
 //}
 
 //Accepts only GPX tracks and stores them as GeoJSON objects.
-//It doesn't produce any parse results. GeoJSON objects can be accessed using getGeoJSON() function
 var gpxCollector = {
-    _geoJSON: [],
     isAcceptable: function (filename, type) { return type === 'gpx' || path.extname(filename) === '.gpx'; },
     parse: function (data, filename, type) {
         var dom = new DOMParser().parseFromString(data.toString());
@@ -29,19 +27,18 @@ var gpxCollector = {
             coords.push([ parseFloat(p.getAttribute('lon')), parseFloat(p.getAttribute('lat')) ]);
         }
         
-        this._geoJSON.push({
-            type: 'Feature',
-            geometry: {
-                type: 'LineString',
-                coordinates: coords
-            }
-        });
-
-        return Q.resolve([]);
-    },
-
-    getGeoJSON : function () { return this._geoJSON; },
-    clean: function () { this._geoJSON = []; }
+        return Q.resolve([{
+            filename: filename,
+            data: {
+                type: 'Feature',
+                geometry: {
+                    type: 'LineString',
+                    coordinates: coords
+                }
+            },
+            type: 'geojson'
+        }]);
+    }
 };
 
 //Parses several track formats using gpsbabel. Type of track is detected using file extension.
@@ -90,18 +87,20 @@ var zipParser = {
         unzipParse
             .on('entry', function (entry) {
                 var unzipFileName = entry.path; 
-                //console.log('entry: ' + unzipFileName);
+                console.log('zip entry: ' + unzipFileName);
                 var uncompressed = new Buffer(0);
                 entry.on('data', function (data) {
                     uncompressed = Buffer.concat([uncompressed, data]);
                 });
                 entry.on('end', function () {
+                    console.log('zip entry done: ' + unzipFileName);
                     uncompressedFiles.push({filename: filename + '/' + unzipFileName, data: uncompressed});
                 }).on('error', function () {
                     console.log('zip error!');
                 });
             })
-            .on('end', function () {
+            .on('close', function () {
+                console.log('zip done', filename);
                 def.resolve(uncompressedFiles);
             });
 
@@ -121,7 +120,6 @@ var httpDownloader = {
             response.on('data', function (data) {
                 fileData = Buffer.concat([fileData, data]);
             }).on('end', function () {
-                //trackParser.addTrack(url.parse(urlData).pathname, fileData);
                 def.resolve({filename: url.parse(fileurl).pathname, data: fileData});
             });
         });

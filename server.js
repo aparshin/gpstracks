@@ -1,9 +1,11 @@
 var http       = require('http'),
     url        = require('url'),
+    Q          = require('q'),
+    _          = require('underscore'),
     formidable = require('formidable'),
 
     TaskManager = require('./TaskManager'),
-    TrackParserManager = require('./TrackParserManager');
+    TracksManager = require('./TracksManager');
 
 
 var taskManager = new TaskManager();
@@ -35,29 +37,46 @@ http.createServer(function (request, response) {
             'Access-Control-Allow-Origin': '*'
         });
 
-        var trackParser = new TrackParserManager();
+        var tracksManager = new TracksManager();
         var form = new formidable.IncomingForm();
+        var userSources = [], 
+            URLSources = [];
         form.onPart = function (part) {
             if (part.name === 'file') {
                 var fileData = new Buffer(0);
                 part.on('data', function (data) {
                     fileData = Buffer.concat([fileData, data]);
                 }).on('end', function () {
-                    trackParser.addTrack(part.filename, fileData);
+                    userSources.push({filename: part.filename, data: fileData});
+                    //var def = tracksManager.addFromSource({filename: part.filename, data: fileData});
+                    //sourceDefers.push(def);
                 });
-            } 
-            else if (part.name === 'url') {
+            } else if (part.name === 'url') {
                 var urlData = '';
                 part.on('data', function (data) {
                     urlData += data;
                 }).on('end', function () {
-                    trackParser.addTrack('', urlData, 'url');
+                    URLSources.push(urlData);
+                    //sourceDefers.push(tracksManager.addFromURL(urlData));
                 });
             }
         };
 
         form.parse(request, function () {
-            var taskID = taskManager.addTask(trackParser.process);
+
+            var taskID = taskManager.addTask(function () {
+                var sourceDefers = [];
+
+                _.each(userSources, function (source) {
+                    sourceDefers.push(tracksManager.getFromSource(source));
+                });
+
+                _.each(URLSources, function (source) {
+                    sourceDefers.push(tracksManager.getFromURL(source));
+                });
+
+                return Q.all(sourceDefers).then(_.flatten);
+            });
             response.end(taskID);
         });
     } 
@@ -70,7 +89,7 @@ http.createServer(function (request, response) {
         var callback = parsedURL.query.callback;
         var res = {state: taskManager.getTaskState(taskID)};
         if (res.state === 'done') {
-            res.result = taskManager.getTaskResult(taskID);
+            res.result = _.pluck(taskManager.getTaskResult(taskID), 'geojson');
             taskManager.removeTask(taskID);
         }
         response.end(callback + '(' + JSON.stringify(res) + ')');

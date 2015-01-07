@@ -7,20 +7,31 @@ module.exports = function () {
     var files = [];
     var def = Q.defer();
 
+    var tracks = [];
+
     var _process = function () {
         var _this = this;
         if (!files.length) {
-            def.resolve(tp.gpxCollector.getGeoJSON());
-            tp.gpxCollector.clean();
+            //def.resolve(tp.gpxCollector.getTracks());
+            //tp.gpxCollector.clean();
             //response.end(JSON.stringify(gpxCollector.getGeoJSON()));
+            def.resolve(tracks);
             return;
         }
 
         var curFile = files.shift();
 
-        //console.log('processFiles', curFile.filename);
+        if (curFile.type === 'geojson') {
+            console.log('+++++++geoJSON', curFile.filename);
+            tracks.push({filename: curFile.filename, geoJSON: curFile.data});
+            setTimeout(_process, 0); 
+            return;
+        }
+
+        console.log('processFiles', curFile.filename);
 
         var processNewFiles = function (newFiles) {
+            console.log('ParserManager: new files', newFiles.length);
             files = files.concat(newFiles);
             setTimeout(_process, 0);
         }; 
@@ -31,6 +42,7 @@ module.exports = function () {
                 return;
             }
         }
+        //TODO: add error logging
         setTimeout(_process, 0); //none of parsers accepts current file - move to the next one
     };
 
