@@ -5,9 +5,12 @@
        "xmldom": "~0.1",
        "q": "~0.8",
        "unzip": "~0.1.11",
-       "formidable": "~1.0",
        "sqlite3": "~3.0.4",
-       "underscore": "~1.7.0"
+       "underscore": "~1.7.0",
+
+        "express": "~4.10.4",
+        "cors": "~2.5.2",
+        "multer": "~0.1.6"
     },
     "devDependencies": {
         "jshint": "~0.9",

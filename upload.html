@@ -71,7 +71,7 @@
                     
                     xhr.onreadystatechange = function() {
                         if(this.readyState == this.DONE) {
-                            checkTask(this.response);
+                            checkTask(JSON.parse(this.response));
                         }
                     };
                     
