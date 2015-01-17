@@ -19,3 +19,9 @@ CREATE TABLE track (
 );
 
 CREATE INDEX sourceIdx ON track (source);
+
+DROP TABLE IF EXISTS links;
+CREATE TABLE links (
+    id TEXT PRIMARY KEY,
+    msg TEXT
+);

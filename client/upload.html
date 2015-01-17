@@ -1,36 +1,51 @@
 ﻿<!DOCTYPE html>
 <html>
     <head>
-        <style>
-            html, body, #map {
-                height: 100%;
-                margin: 0px;
-                padding: 0px;
-            }
-            #left-panel {
-                float: left;
-                width: 300px;
-                height: 100%;
-                padding: 0px 10px;
-            }
-            #upload, #trackurl {
-                width: 100%;
-            }
-        </style>
-        <link rel="stylesheet" href="http://cdn.leafletjs.com/leaflet-0.4.5/leaflet.css" />
-        <!--[if lte IE 8]>
-            <link rel="stylesheet" href="http://cdn.leafletjs.com/leaflet-0.4.5/leaflet.ie.css" />
-        <![endif]-->
+        <link rel="stylesheet" href="http://cdn.leafletjs.com/leaflet-0.7.3/leaflet.css" />
+        <link rel="stylesheet" href="main.css" />
 
-        <script src="http://cdn.leafletjs.com/leaflet-0.4.5/leaflet-src.js"></script>
-
+        <script src="http://cdn.leafletjs.com/leaflet-0.7.3/leaflet-src.js"></script>
         <script src="http://code.jquery.com/jquery-1.9.0.min.js"></script>
+
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/underscore.js/1.7.0/underscore.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/backbone.js/1.1.2/backbone.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/handlebars.js/2.0.0/handlebars.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/thorax/2.2.1/thorax.js"></script>
+
+        <script src="gpstrack.js"></script>
 
         <script>
             $(function () {
                 var DOMAIN = 'http://' + window.location.hostname + ':1337/';
+
+                var gpsTracks = new GPSTrackCollection();
+
+                var matchLinkID = window.location.search.match(/link=(\w+)/);
+                if (matchLinkID) {
+                    $.getJSON(DOMAIN + 'loadlink?callback=?', {id: matchLinkID[1]}).then(function(msg) {
+                        var ids = _.pluck(msg, 'id');
+                        $.getJSON(DOMAIN + 'gettracks?callback=?', {id: ids}).then(function(tracks) {
+                            tracks.forEach(function(track, index) {
+                                gpsTracks.add({
+                                    id: msg[index].id,
+                                    title: msg[index].title,
+                                    geojson: track.geojson
+                                })
+                            });
+                        });
+                    })
+
+                }
+
+                var gpsTracksView = new GPSTrackCollectionView({
+                        el: $('#tracks'),
+                        collection: gpsTracks
+                    });
+
                 var map = L.map('map').setView([55.7, 37.7], 5);
                 L.tileLayer('http://{s}.tile.osm.org/{z}/{x}/{y}.png').addTo(map);
+
+                var mapTracks = new MapGPSTracksManager(map, gpsTracks);
 
                 var checkTask = function(taskid) {
                     var interval = setInterval(function() {
@@ -41,9 +56,16 @@
                                 if (response.state === 'done') {
                                     clearInterval(interval);
 
-                                    var geoObjects = response.result;
-                                    for (var i = 0; i < geoObjects.length; i++)
-                                        L.geoJson(geoObjects[i]).addTo(map);
+                                    
+                                    response.result.forEach(function(track) {
+                                        gpsTracks.add({
+                                            id: track.id,
+                                            title: track.name,
+                                            geojson: track.geojson
+                                        });
+
+                                        // L.geoJson(track.geojson).addTo(map);
+                                    })
 
                                     //map.fitBounds(track.getBounds());
                                 } else if (response.state === 'unknown') {
@@ -101,6 +123,14 @@
                         contentType: false
                     });
                 })
+
+                $('#save').click(function() {
+                    var msg = JSON.stringify(gpsTracks.saveState());
+                    $.post(DOMAIN + 'savelink', {msg: msg}).then(function(id) {
+                        var link = window.location.href.split('?')[0] + '?link=' + id;
+                        $('#linkID').val(link).focus().select();
+                    })
+                })
                 
                 /*$('#left-panel').on('drop',function(e){
                     e.originalEvent.stopPropagation();
@@ -115,9 +145,12 @@
 
     </head>
     <body>
-        <div id="left-panel">
-            <input id="trackurl"></input>
-            <button id="upload">Upload</button>
+        <div id = "left-panel">
+            <input id = "trackurl"></input>
+            <button id = "upload">Upload</button>
+            <button id = "save">Save</button>
+            <input id = "linkID"></input>
+            <div id="tracks"></div>
         </div>
         <div id="map"></div>
     </body>

@@ -91,4 +91,18 @@ module.exports = function () {
         }
         return defer.promise;
     };
+
+    this.getTrackByIDs = function(ids) {
+        var def = Q.defer();
+
+        var sql = 'SELECT * FROM track WHERE id in (' + ids.join() + ')';
+        db.all(sql, function(err, rows) {
+            rows.forEach(function (row) {
+                row.geojson = JSON.parse(row.geojson);
+            });
+            def.resolve(rows);
+        });
+
+        return def.promise;
+    };
 };

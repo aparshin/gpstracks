@@ -1,25 +1,27 @@
-var url        = require('url'),
-    Q          = require('q'),
+var Q          = require('q'),
     _          = require('underscore'),
 
     express    = require('express'),
     cors       = require('cors'),
     multer     = require('multer'),
+    bodyParser = require('body-parser'),
 
     TaskManager   = require('./TaskManager'),
-    TracksManager = require('./TracksManager');
+    TracksManager = require('./TracksManager'),
+    LinksManager  = require('./LinksManager');
 
 
 var app = express();
 
 app.use(cors());
 app.use(multer({inMemory: true}));
+app.use(bodyParser.urlencoded({extended: false}));
 
 var taskManager = new TaskManager();
 
-app.all('/uploadgps', function(req, res) {
+app.all('/uploadgps', function (req, res) {
     if (req.method !== 'POST' && req.method !== 'GET') {
-       res.status(501).end(); 
+        res.status(501).end(); 
     }
 
     var urls = [];
@@ -57,14 +59,46 @@ app.all('/uploadgps', function(req, res) {
     res.json(taskID);
 });
 
-app.get('/checktask', function(req, res) {
-    var taskID =req.query.taskid;
+app.get('/checktask', function (req, res) {
+    var taskID = req.query.taskid;
     var resJSON = {state: taskManager.getTaskState(taskID)};
     if (resJSON.state === 'done') {
-        resJSON.result = _.pluck(taskManager.getTaskResult(taskID), 'geojson');
+        // resJSON.result = _.pluck(taskManager.getTaskResult(taskID), 'geojson');
+        resJSON.result = taskManager.getTaskResult(taskID);
         taskManager.removeTask(taskID);
     }
     res.jsonp(resJSON);
+});
+
+app.get('/gettracks', function (req, res) {
+    var ids = req.query.id;
+    if (!Array.isArray(ids)) {
+        ids = [ids];
+    }
+    var tracksManager = new TracksManager();
+    tracksManager.getTrackByIDs(ids).then(function(tracks) {
+        res.jsonp(tracks);
+    })
+});
+
+app.get('/loadlink', function(req, res) {
+    var linksManager = new LinksManager();
+    linksManager.load(req.query.id).then(function(msg) {
+        res.jsonp(JSON.parse(msg));
+    }, function() {
+        res.jsonp('');
+    })
+});
+
+app.post('/savelink', function(req, res) {
+    var linksManager = new LinksManager();
+    linksManager.save(req.body.msg).then(
+        function(linkID) {
+            res.json(linkID);
+        }, function(){
+            res.json();
+        }
+    )
 });
 
 app.listen(1337);
