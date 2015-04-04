@@ -5,16 +5,13 @@ module.exports = function () {
     var parsers = tp.parsers;
 
     var files = [];
-    var def = Q.defer();
+    var def;
 
     var tracks = [];
 
     var _process = function () {
         var _this = this;
         if (!files.length) {
-            //def.resolve(tp.gpxCollector.getTracks());
-            //tp.gpxCollector.clean();
-            //response.end(JSON.stringify(gpxCollector.getGeoJSON()));
             def.resolve(tracks);
             return;
         }
@@ -51,6 +48,8 @@ module.exports = function () {
     };
 
     this.process = function () {
+        tracks = [];
+        def = Q.defer();
         _process();
         return def.promise;
     };
