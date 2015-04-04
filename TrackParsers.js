@@ -1,7 +1,7 @@
 var unzip      = require('unzip'),
     path       = require('path'),
     spawn      = require('child_process').spawn,
-    DOMParser  = require('xmldom').DOMParser,
+    sax        = require('sax'),
     url        = require('url'),
     http       = require('http'),
     Q          = require('q');
@@ -17,27 +17,50 @@ var unzip      = require('unzip'),
 var gpxCollector = {
     isAcceptable: function (filename, type) { return type === 'gpx' || path.extname(filename) === '.gpx'; },
     parse: function (data, filename, type) {
-        var dom = new DOMParser().parseFromString(data.toString());
-        var pointElems = dom.documentElement.getElementsByTagName('trkpt');
-        
-        var coords = [];
-        
-        for (var iP = 0; iP < pointElems.length; iP++) {
-            var p = pointElems[iP];
-            coords.push([ parseFloat(p.getAttribute('lon')), parseFloat(p.getAttribute('lat')) ]);
-        }
-        
-        return Q.resolve([{
-            filename: filename,
-            data: {
-                type: 'Feature',
-                geometry: {
-                    type: 'LineString',
-                    coordinates: coords
+        var coords = [],
+            trkCoords = [];
+
+        var inTrk = false;
+
+        var parseStream = sax.createStream(true);
+
+        var def = Q.defer();
+
+        parseStream
+            .on('opentag', function(node) {
+                var name = node.name.toLowerCase();
+
+                if (name === 'trk') {
+                    inTrk = true;
+                    trkCoords = [];
+                } else if (inTrk && name === 'trkpt') {
+                     trkCoords.push([parseFloat(node.attributes.lon), parseFloat(node.attributes.lat)]);
                 }
-            },
-            type: 'geojson'
-        }]);
+            }).on('closetag', function(name) {
+                name = name.toLowerCase();
+                if (name === 'trk') {
+                    inTrk = false;
+                    coords.push(trkCoords);
+                }
+            }).on('end', function() {
+                var isMulti = coords.length > 1;
+                def.resolve([{
+                    filename: filename,
+                    data: {
+                        type: 'Feature',
+                        geometry: {
+                            type: isMulti ? 'MultiLineString' : 'LineString',
+                            coordinates: isMulti ? coords : coords[0]
+                        }
+                    },
+                    type: 'geojson'
+                }])
+            })
+
+
+        parseStream.write(data);
+        parseStream.end();
+        return def.promise;
     }
 };
 

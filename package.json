@@ -2,7 +2,6 @@
     "name": "gpstracks",
     "version": "0.1.0",
     "dependencies": {
-       "xmldom": "~0.1",
        "q": "~0.8",
        "unzip": "~0.1.11",
        "sqlite3": "~3.0.4",
@@ -13,7 +12,8 @@
         "multer": "~0.1.6",
         "body-parser": "~1.10.1",
 
-        "node-uuid": "~1.4.2"
+        "node-uuid": "~1.4.2",
+        "sax": "~0.6.1"
     },
     "devDependencies": {
         "jshint": "~0.9",
